@@ -1,22 +1,28 @@
-import { useEffect, useState } from 'react';
-import { Plus } from 'lucide-react';
-import { getPemasukan, postPemasukan } from '../services/api';
+import { useEffect, useState, useRef } from 'react';
+import { Plus, Pencil, Trash2, Search } from 'lucide-react';
+import { getPemasukan, postPemasukan, putPemasukan, deletePemasukan } from '../services/api';
 import { formatDate } from '../utils/format';
 import Modal from '../components/Modal';
 import Pagination, { PAGINATION_LIMIT } from '../components/Pagination';
 
 const inputClass = 'w-full border border-slate-300 rounded-xl px-3 py-2.5 focus:ring-2 focus:ring-slate-500 focus:border-slate-500';
 const btnPrimary = 'inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-700 text-white hover:bg-slate-800 disabled:opacity-50 transition-colors';
+const btnDanger = 'inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-red-600 hover:bg-red-50 transition-colors';
+const btnEdit = 'inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-blue-600 hover:bg-blue-50 transition-colors';
 
 export default function Pemasukan() {
   const [list, setList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
+  const [editId, setEditId] = useState(null);
+  const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
+  const [searchTerm, setSearchTerm] = useState('');
   const limit = PAGINATION_LIMIT;
+  const searchTimeout = useRef(null);
   const [form, setForm] = useState({
     nama_pemasukan: '',
     jumlah: '',
@@ -24,10 +30,12 @@ export default function Pemasukan() {
     keterangan: '',
   });
 
-  const load = async (p = page) => {
+  const load = async (p = page, search = searchTerm) => {
     try {
       setLoading(true);
-      const res = await getPemasukan({ page: p, limit });
+      const params = { page: p, limit };
+      if (search) params.search = search;
+      const res = await getPemasukan(params);
       const body = res.data;
       if (body.data !== undefined) {
         setList(body.data);
@@ -50,13 +58,32 @@ export default function Pemasukan() {
     load(1);
   }, []);
 
-  const openModal = () => {
-    setForm({
-      nama_pemasukan: '',
-      jumlah: '',
-      tanggal: new Date().toISOString().slice(0, 10),
-      keterangan: '',
-    });
+  const handleSearch = (value) => {
+    setSearchTerm(value);
+    if (searchTimeout.current) clearTimeout(searchTimeout.current);
+    searchTimeout.current = setTimeout(() => {
+      load(1, value);
+    }, 400);
+  };
+
+  const openModal = (row = null) => {
+    if (row) {
+      setEditId(row.id);
+      setForm({
+        nama_pemasukan: row.nama_pemasukan,
+        jumlah: String(row.jumlah),
+        tanggal: row.tanggal ? row.tanggal.slice(0, 10) : new Date().toISOString().slice(0, 10),
+        keterangan: row.keterangan || '',
+      });
+    } else {
+      setEditId(null);
+      setForm({
+        nama_pemasukan: '',
+        jumlah: '',
+        tanggal: new Date().toISOString().slice(0, 10),
+        keterangan: '',
+      });
+    }
     setModalOpen(true);
   };
 
@@ -65,12 +92,17 @@ export default function Pemasukan() {
     if (!form.nama_pemasukan.trim() || !form.jumlah) return;
     setSubmitting(true);
     try {
-      await postPemasukan({
+      const payload = {
         nama_pemasukan: form.nama_pemasukan,
         jumlah: Number(form.jumlah),
         tanggal: form.tanggal,
         keterangan: form.keterangan,
-      });
+      };
+      if (editId) {
+        await putPemasukan(editId, payload);
+      } else {
+        await postPemasukan(payload);
+      }
       setModalOpen(false);
       await load(page);
     } catch (err) {
@@ -80,21 +112,41 @@ export default function Pemasukan() {
     }
   };
 
+  const handleDelete = async (id) => {
+    try {
+      await deletePemasukan(id);
+      setDeleteConfirm(null);
+      await load(page);
+    } catch (err) {
+      alert(err.response?.data?.error || err.message);
+    }
+  };
+
   const formatRupiah = (n) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(n);
 
   return (
     <div>
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <h1 className="text-2xl font-bold text-slate-800">Pemasukan</h1>
-        <button type="button" onClick={openModal} className={btnPrimary}>
+        <button type="button" onClick={() => openModal()} className={btnPrimary}>
           <Plus className="w-5 h-5" />
           Tambah Pemasukan
         </button>
       </div>
 
       <div className="bg-white rounded-2xl shadow border border-slate-200 overflow-hidden">
-        <div className="px-6 py-4 border-b border-slate-200 bg-slate-50">
+        <div className="px-6 py-4 border-b border-slate-200 bg-slate-50 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <h2 className="text-lg font-semibold text-slate-800">Daftar Pemasukan</h2>
+          <div className="relative w-full sm:w-72">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => handleSearch(e.target.value)}
+              placeholder="Cari pemasukan..."
+              className="w-full pl-9 pr-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-slate-500 focus:border-slate-500"
+            />
+          </div>
         </div>
         {loading ? (
           <p className="p-6 text-slate-500">Memuat...</p>
@@ -108,16 +160,27 @@ export default function Pemasukan() {
                   <th className="px-6 py-4 font-medium">Jumlah</th>
                   <th className="px-6 py-4 font-medium">Tanggal</th>
                   <th className="px-6 py-4 font-medium">Keterangan</th>
+                  <th className="px-6 py-4 font-medium text-center">Aksi</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200">
                 {list.map((row, i) => (
                   <tr key={row.id} className="hover:bg-slate-50">
-                    <td className="px-6 py-4">{i + 1}</td>
+                    <td className="px-6 py-4">{(page - 1) * limit + i + 1}</td>
                     <td className="px-6 py-4">{row.nama_pemasukan}</td>
                     <td className="px-6 py-4">{formatRupiah(row.jumlah)}</td>
                     <td className="px-6 py-4">{formatDate(row.tanggal)}</td>
                     <td className="px-6 py-4">{row.keterangan || '-'}</td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center justify-center gap-1">
+                        <button type="button" onClick={() => openModal(row)} className={btnEdit} title="Edit">
+                          <Pencil className="w-4 h-4" />
+                        </button>
+                        <button type="button" onClick={() => setDeleteConfirm(row.id)} className={btnDanger} title="Hapus">
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -136,7 +199,7 @@ export default function Pemasukan() {
         )}
       </div>
 
-      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title="Tambah Pemasukan">
+      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title={editId ? 'Edit Pemasukan' : 'Tambah Pemasukan'}>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1.5">Nama Pemasukan</label>
@@ -189,6 +252,18 @@ export default function Pemasukan() {
             </button>
           </div>
         </form>
+      </Modal>
+
+      <Modal open={deleteConfirm !== null} onClose={() => setDeleteConfirm(null)} title="Konfirmasi Hapus" size="sm">
+        <p className="text-slate-600 mb-6">Apakah Anda yakin ingin menghapus data ini? Tindakan ini tidak dapat dibatalkan.</p>
+        <div className="flex gap-3">
+          <button type="button" onClick={() => setDeleteConfirm(null)} className="px-4 py-2.5 rounded-xl border border-slate-300 text-slate-700 hover:bg-slate-50">
+            Batal
+          </button>
+          <button type="button" onClick={() => handleDelete(deleteConfirm)} className="px-4 py-2.5 rounded-xl bg-red-600 text-white hover:bg-red-700 transition-colors">
+            Hapus
+          </button>
+        </div>
       </Modal>
     </div>
   );

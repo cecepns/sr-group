@@ -419,17 +419,20 @@ app.delete('/api/material-keluar/:id', auth([ROLE_SUPER_ADMIN, ROLE_ADMIN_GUDANG
 app.get('/api/pemasukan', auth([ROLE_SUPER_ADMIN, ROLE_ADMIN_KANTOR]), async (req, res) => {
   try {
     const conn = await getPool();
+    const search = (req.query.search || '').trim();
     const hasPagination = req.query.page != null && req.query.limit != null;
+    const whereClause = search ? ' WHERE nama_pemasukan LIKE ? OR keterangan LIKE ?' : '';
+    const searchParams = search ? [`%${search}%`, `%${search}%`] : [];
     if (hasPagination) {
       const { page, limit, offset } = parsePagination(req);
-      const [[{ total }]] = await conn.execute('SELECT COUNT(*) AS total FROM tabel_pemasukan');
+      const [[{ total }]] = await conn.execute('SELECT COUNT(*) AS total FROM tabel_pemasukan' + whereClause, searchParams);
       const [rows] = await conn.execute(
-        'SELECT * FROM tabel_pemasukan ORDER BY tanggal DESC, created_at DESC LIMIT ? OFFSET ?',
-        [limit, offset]
+        'SELECT * FROM tabel_pemasukan' + whereClause + ' ORDER BY tanggal DESC, created_at DESC LIMIT ? OFFSET ?',
+        [...searchParams, limit, offset]
       );
       res.json({ data: rows, total: Number(total), page, limit, totalPages: Math.ceil(Number(total) / limit) });
     } else {
-      const [rows] = await conn.execute('SELECT * FROM tabel_pemasukan ORDER BY tanggal DESC, created_at DESC');
+      const [rows] = await conn.execute('SELECT * FROM tabel_pemasukan' + whereClause + ' ORDER BY tanggal DESC, created_at DESC', searchParams);
       res.json(rows);
     }
   } catch (err) {
@@ -453,20 +456,49 @@ app.post('/api/pemasukan', auth([ROLE_SUPER_ADMIN, ROLE_ADMIN_KANTOR]), async (r
   }
 });
 
+app.put('/api/pemasukan/:id', auth([ROLE_SUPER_ADMIN, ROLE_ADMIN_KANTOR]), async (req, res) => {
+  try {
+    const { nama_pemasukan, jumlah, tanggal, keterangan } = req.body;
+    const conn = await getPool();
+    await conn.execute(
+      'UPDATE tabel_pemasukan SET nama_pemasukan = ?, jumlah = ?, tanggal = ?, keterangan = ? WHERE id = ?',
+      [nama_pemasukan, jumlah, tanggal, keterangan || '', req.params.id]
+    );
+    res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete('/api/pemasukan/:id', auth([ROLE_SUPER_ADMIN, ROLE_ADMIN_KANTOR]), async (req, res) => {
+  try {
+    const conn = await getPool();
+    await conn.execute('DELETE FROM tabel_pemasukan WHERE id = ?', [req.params.id]);
+    res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.get('/api/pengeluaran', auth([ROLE_SUPER_ADMIN, ROLE_ADMIN_KANTOR]), async (req, res) => {
   try {
     const conn = await getPool();
+    const search = (req.query.search || '').trim();
     const hasPagination = req.query.page != null && req.query.limit != null;
+    const whereClause = search ? ' WHERE nama_pengeluaran LIKE ? OR keterangan LIKE ?' : '';
+    const searchParams = search ? [`%${search}%`, `%${search}%`] : [];
     if (hasPagination) {
       const { page, limit, offset } = parsePagination(req);
-      const [[{ total }]] = await conn.execute('SELECT COUNT(*) AS total FROM tabel_pengeluaran_kantor');
+      const [[{ total }]] = await conn.execute('SELECT COUNT(*) AS total FROM tabel_pengeluaran_kantor' + whereClause, searchParams);
       const [rows] = await conn.execute(
-        'SELECT * FROM tabel_pengeluaran_kantor ORDER BY tanggal DESC, created_at DESC LIMIT ? OFFSET ?',
-        [limit, offset]
+        'SELECT * FROM tabel_pengeluaran_kantor' + whereClause + ' ORDER BY tanggal DESC, created_at DESC LIMIT ? OFFSET ?',
+        [...searchParams, limit, offset]
       );
       res.json({ data: rows, total: Number(total), page, limit, totalPages: Math.ceil(Number(total) / limit) });
     } else {
-      const [rows] = await conn.execute('SELECT * FROM tabel_pengeluaran_kantor ORDER BY tanggal DESC, created_at DESC');
+      const [rows] = await conn.execute('SELECT * FROM tabel_pengeluaran_kantor' + whereClause + ' ORDER BY tanggal DESC, created_at DESC', searchParams);
       res.json(rows);
     }
   } catch (err) {
@@ -490,20 +522,49 @@ app.post('/api/pengeluaran', auth([ROLE_SUPER_ADMIN, ROLE_ADMIN_KANTOR]), async 
   }
 });
 
+app.put('/api/pengeluaran/:id', auth([ROLE_SUPER_ADMIN, ROLE_ADMIN_KANTOR]), async (req, res) => {
+  try {
+    const { nama_pengeluaran, jumlah, tanggal, keterangan } = req.body;
+    const conn = await getPool();
+    await conn.execute(
+      'UPDATE tabel_pengeluaran_kantor SET nama_pengeluaran = ?, jumlah = ?, tanggal = ?, keterangan = ? WHERE id = ?',
+      [nama_pengeluaran, jumlah, tanggal, keterangan || '', req.params.id]
+    );
+    res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete('/api/pengeluaran/:id', auth([ROLE_SUPER_ADMIN, ROLE_ADMIN_KANTOR]), async (req, res) => {
+  try {
+    const conn = await getPool();
+    await conn.execute('DELETE FROM tabel_pengeluaran_kantor WHERE id = ?', [req.params.id]);
+    res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.get('/api/gaji', auth([ROLE_SUPER_ADMIN, ROLE_ADMIN_KANTOR]), async (req, res) => {
   try {
     const conn = await getPool();
+    const search = (req.query.search || '').trim();
     const hasPagination = req.query.page != null && req.query.limit != null;
+    const whereClause = search ? ' WHERE nama_tukang LIKE ? OR keterangan LIKE ?' : '';
+    const searchParams = search ? [`%${search}%`, `%${search}%`] : [];
     if (hasPagination) {
       const { page, limit, offset } = parsePagination(req);
-      const [[{ total }]] = await conn.execute('SELECT COUNT(*) AS total FROM tabel_gaji_tukang');
+      const [[{ total }]] = await conn.execute('SELECT COUNT(*) AS total FROM tabel_gaji_tukang' + whereClause, searchParams);
       const [rows] = await conn.execute(
-        'SELECT * FROM tabel_gaji_tukang ORDER BY tanggal DESC, created_at DESC LIMIT ? OFFSET ?',
-        [limit, offset]
+        'SELECT * FROM tabel_gaji_tukang' + whereClause + ' ORDER BY tanggal DESC, created_at DESC LIMIT ? OFFSET ?',
+        [...searchParams, limit, offset]
       );
       res.json({ data: rows, total: Number(total), page, limit, totalPages: Math.ceil(Number(total) / limit) });
     } else {
-      const [rows] = await conn.execute('SELECT * FROM tabel_gaji_tukang ORDER BY tanggal DESC, created_at DESC');
+      const [rows] = await conn.execute('SELECT * FROM tabel_gaji_tukang' + whereClause + ' ORDER BY tanggal DESC, created_at DESC', searchParams);
       res.json(rows);
     }
   } catch (err) {
@@ -527,21 +588,51 @@ app.post('/api/gaji', auth([ROLE_SUPER_ADMIN, ROLE_ADMIN_KANTOR]), async (req, r
   }
 });
 
+app.put('/api/gaji/:id', auth([ROLE_SUPER_ADMIN, ROLE_ADMIN_KANTOR]), async (req, res) => {
+  try {
+    const { nama_tukang, jumlah, tanggal, keterangan } = req.body;
+    const conn = await getPool();
+    await conn.execute(
+      'UPDATE tabel_gaji_tukang SET nama_tukang = ?, jumlah = ?, tanggal = ?, keterangan = ? WHERE id = ?',
+      [nama_tukang, jumlah, tanggal, keterangan || '', req.params.id]
+    );
+    res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete('/api/gaji/:id', auth([ROLE_SUPER_ADMIN, ROLE_ADMIN_KANTOR]), async (req, res) => {
+  try {
+    const conn = await getPool();
+    await conn.execute('DELETE FROM tabel_gaji_tukang WHERE id = ?', [req.params.id]);
+    res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.get('/api/belanja-material', auth([ROLE_SUPER_ADMIN, ROLE_ADMIN_KANTOR]), async (req, res) => {
   try {
     const conn = await getPool();
+    const search = (req.query.search || '').trim();
     const hasPagination = req.query.page != null && req.query.limit != null;
+    const whereClause = search ? ' WHERE m.nama_material LIKE ? OR bm.keterangan LIKE ?' : '';
+    const searchParams = search ? [`%${search}%`, `%${search}%`] : [];
     const baseSql = `SELECT bm.*, m.nama_material, m.satuan
        FROM tabel_belanja_material bm
-       LEFT JOIN tabel_material m ON bm.material_id = m.id
+       LEFT JOIN tabel_material m ON bm.material_id = m.id` + whereClause + `
        ORDER BY bm.tanggal DESC, bm.created_at DESC`;
     if (hasPagination) {
       const { page, limit, offset } = parsePagination(req);
-      const [[{ total }]] = await conn.execute('SELECT COUNT(*) AS total FROM tabel_belanja_material');
-      const [rows] = await conn.execute(baseSql + ' LIMIT ? OFFSET ?', [limit, offset]);
+      const countSql = `SELECT COUNT(*) AS total FROM tabel_belanja_material bm LEFT JOIN tabel_material m ON bm.material_id = m.id` + whereClause;
+      const [[{ total }]] = await conn.execute(countSql, searchParams);
+      const [rows] = await conn.execute(baseSql + ' LIMIT ? OFFSET ?', [...searchParams, limit, offset]);
       res.json({ data: rows, total: Number(total), page, limit, totalPages: Math.ceil(Number(total) / limit) });
     } else {
-      const [rows] = await conn.execute(baseSql);
+      const [rows] = await conn.execute(baseSql, searchParams);
       res.json(rows);
     }
   } catch (err) {
@@ -565,10 +656,39 @@ app.post('/api/belanja-material', auth([ROLE_SUPER_ADMIN, ROLE_ADMIN_KANTOR]), a
   }
 });
 
+app.put('/api/belanja-material/:id', auth([ROLE_SUPER_ADMIN, ROLE_ADMIN_KANTOR]), async (req, res) => {
+  try {
+    const { material_id, qty, harga, total, tanggal, keterangan } = req.body;
+    const conn = await getPool();
+    await conn.execute(
+      'UPDATE tabel_belanja_material SET material_id = ?, qty = ?, harga = ?, total = ?, tanggal = ?, keterangan = ? WHERE id = ?',
+      [material_id, qty, harga, total, tanggal, keterangan || '', req.params.id]
+    );
+    res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete('/api/belanja-material/:id', auth([ROLE_SUPER_ADMIN, ROLE_ADMIN_KANTOR]), async (req, res) => {
+  try {
+    const conn = await getPool();
+    await conn.execute('DELETE FROM tabel_belanja_material WHERE id = ?', [req.params.id]);
+    res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.get('/api/stok', auth([ROLE_SUPER_ADMIN, ROLE_ADMIN_GUDANG]), async (req, res) => {
   try {
     const conn = await getPool();
+    const search = (req.query.search || '').trim();
     const hasPagination = req.query.page != null && req.query.limit != null;
+    const materialWhere = search ? ' WHERE m.nama_material LIKE ?' : '';
+    const searchParams = search ? [`%${search}%`] : [];
     const subquery = `SELECT m.id AS material_id, m.nama_material, m.satuan,
          COALESCE(mm.total, 0) AS total_masuk, COALESCE(mk.total, 0) AS total_keluar,
          (COALESCE(mm.total, 0) - COALESCE(mk.total, 0)) AS stok
@@ -579,19 +699,19 @@ app.get('/api/stok', auth([ROLE_SUPER_ADMIN, ROLE_ADMIN_GUDANG]), async (req, re
          FROM tabel_material_keluar
          WHERE lokasi_tujuan_id IS NULL
          GROUP BY material_id
-       ) mk ON m.id = mk.material_id
+       ) mk ON m.id = mk.material_id` + materialWhere + `
        ORDER BY m.nama_material`;
     if (hasPagination) {
       const { page, limit, offset } = parsePagination(req);
-      const [countRows] = await conn.execute('SELECT COUNT(*) AS total FROM tabel_material');
+      const [countRows] = await conn.execute('SELECT COUNT(*) AS total FROM tabel_material' + (search ? ' WHERE nama_material LIKE ?' : ''), searchParams);
       const total = Number(countRows[0].total);
       const [rows] = await conn.execute(
         `SELECT * FROM (${subquery}) AS stok_table LIMIT ? OFFSET ?`,
-        [limit, offset]
+        [...searchParams, limit, offset]
       );
       res.json({ data: rows, total, page, limit, totalPages: Math.ceil(total / limit) });
     } else {
-      const [rows] = await conn.execute(subquery);
+      const [rows] = await conn.execute(subquery, searchParams);
       res.json(rows);
     }
   } catch (err) {
