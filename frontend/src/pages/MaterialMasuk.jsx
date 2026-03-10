@@ -136,6 +136,7 @@ export default function MaterialMasuk() {
                 <tr>
                   <th className="px-6 py-4 font-medium">No</th>
                   <th className="px-6 py-4 font-medium">Material</th>
+                  <th className="px-6 py-4 font-medium">Harga Satuan</th>
                   <th className="px-6 py-4 font-medium">Lokasi</th>
                   <th className="px-6 py-4 font-medium">Qty</th>
                   <th className="px-6 py-4 font-medium">Tanggal</th>
@@ -148,6 +149,11 @@ export default function MaterialMasuk() {
                   <tr key={row.id} className="hover:bg-slate-50">
                     <td className="px-6 py-4">{i + 1}</td>
                     <td className="px-6 py-4">{row.nama_material} ({row.satuan})</td>
+                    <td className="px-6 py-4">
+                      {row.harga != null && Number(row.harga) > 0
+                        ? `Rp ${Number(row.harga).toLocaleString('id-ID')} / ${row.satuan}`
+                        : '-'}
+                    </td>
                     <td className="px-6 py-4">{row.nama_lokasi}</td>
                     <td className="px-6 py-4">{Number(row.qty).toLocaleString('id-ID')}</td>
                     <td className="px-6 py-4">{formatDate(row.tanggal)}</td>

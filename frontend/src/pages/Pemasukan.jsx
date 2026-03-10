@@ -28,6 +28,7 @@ export default function Pemasukan() {
     jumlah: '',
     tanggal: new Date().toISOString().slice(0, 10),
     keterangan: '',
+    lokasi: '',
   });
 
   const load = async (p = page, search = searchTerm) => {
@@ -74,6 +75,7 @@ export default function Pemasukan() {
         jumlah: String(row.jumlah),
         tanggal: row.tanggal ? row.tanggal.slice(0, 10) : new Date().toISOString().slice(0, 10),
         keterangan: row.keterangan || '',
+        lokasi: row.lokasi || '',
       });
     } else {
       setEditId(null);
@@ -82,6 +84,7 @@ export default function Pemasukan() {
         jumlah: '',
         tanggal: new Date().toISOString().slice(0, 10),
         keterangan: '',
+        lokasi: '',
       });
     }
     setModalOpen(true);
@@ -97,6 +100,7 @@ export default function Pemasukan() {
         jumlah: Number(form.jumlah),
         tanggal: form.tanggal,
         keterangan: form.keterangan,
+        lokasi: form.lokasi,
       };
       if (editId) {
         await putPemasukan(editId, payload);
@@ -158,6 +162,7 @@ export default function Pemasukan() {
                   <th className="px-6 py-4 font-medium">No</th>
                   <th className="px-6 py-4 font-medium">Nama Pemasukan</th>
                   <th className="px-6 py-4 font-medium">Jumlah</th>
+                  <th className="px-6 py-4 font-medium">Lokasi</th>
                   <th className="px-6 py-4 font-medium">Tanggal</th>
                   <th className="px-6 py-4 font-medium">Keterangan</th>
                   <th className="px-6 py-4 font-medium text-center">Aksi</th>
@@ -169,6 +174,7 @@ export default function Pemasukan() {
                     <td className="px-6 py-4">{(page - 1) * limit + i + 1}</td>
                     <td className="px-6 py-4">{row.nama_pemasukan}</td>
                     <td className="px-6 py-4">{formatRupiah(row.jumlah)}</td>
+                    <td className="px-6 py-4">{row.lokasi || '-'}</td>
                     <td className="px-6 py-4">{formatDate(row.tanggal)}</td>
                     <td className="px-6 py-4">{row.keterangan || '-'}</td>
                     <td className="px-6 py-4">
@@ -221,6 +227,16 @@ export default function Pemasukan() {
               onChange={(e) => setForm((f) => ({ ...f, jumlah: e.target.value }))}
               className={inputClass}
               required
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1.5">Lokasi</label>
+            <input
+              type="text"
+              value={form.lokasi}
+              onChange={(e) => setForm((f) => ({ ...f, lokasi: e.target.value }))}
+              className={inputClass}
+              placeholder="Contoh: Proyek A"
             />
           </div>
           <div>

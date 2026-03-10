@@ -128,6 +128,7 @@ export default function StokGudang() {
                   <th className="px-6 py-4 font-medium">No</th>
                   <th className="px-6 py-4 font-medium">Material</th>
                   <th className="px-6 py-4 font-medium">Satuan</th>
+                  <th className="px-6 py-4 font-medium">Harga Satuan</th>
                   <th className="px-6 py-4 font-medium">Total Masuk</th>
                   <th className="px-6 py-4 font-medium">Total Keluar</th>
                   <th className="px-6 py-4 font-medium">Stok</th>
@@ -140,6 +141,11 @@ export default function StokGudang() {
                     <td className="px-6 py-4">{(page - 1) * limit + i + 1}</td>
                     <td className="px-6 py-4">{row.nama_material}</td>
                     <td className="px-6 py-4">{row.satuan}</td>
+                    <td className="px-6 py-4">
+                      {row.harga != null && Number(row.harga) > 0
+                        ? `Rp ${Number(row.harga).toLocaleString('id-ID')} / ${row.satuan}`
+                        : '-'}
+                    </td>
                     <td className="px-6 py-4">{Number(row.total_masuk).toLocaleString('id-ID')}</td>
                     <td className="px-6 py-4">{Number(row.total_keluar).toLocaleString('id-ID')}</td>
                     <td className="px-6 py-4 font-semibold">{Number(row.stok).toLocaleString('id-ID')}</td>

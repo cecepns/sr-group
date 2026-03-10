@@ -320,7 +320,7 @@ app.get('/api/material-masuk', auth([ROLE_SUPER_ADMIN, ROLE_ADMIN_GUDANG]), asyn
   try {
     const conn = await getPool();
     const hasPagination = req.query.page != null && req.query.limit != null;
-    const baseSql = `SELECT mm.*, m.nama_material, m.satuan, l.nama_lokasi
+    const baseSql = `SELECT mm.*, m.nama_material, m.satuan, m.harga, l.nama_lokasi
        FROM tabel_material_masuk mm
        LEFT JOIN tabel_material m ON mm.material_id = m.id
        LEFT JOIN tabel_lokasi l ON mm.lokasi_id = l.id
@@ -370,7 +370,7 @@ app.get('/api/material-keluar', auth([ROLE_SUPER_ADMIN, ROLE_ADMIN_GUDANG]), asy
   try {
     const conn = await getPool();
     const hasPagination = req.query.page != null && req.query.limit != null;
-    const baseSql = `SELECT mk.*, m.nama_material, m.satuan,
+    const baseSql = `SELECT mk.*, m.nama_material, m.satuan, m.harga,
        l_asal.nama_lokasi AS nama_lokasi_asal,
        l_tujuan.nama_lokasi AS nama_lokasi_tujuan
        FROM tabel_material_keluar mk
@@ -446,11 +446,11 @@ app.get('/api/pemasukan', auth([ROLE_SUPER_ADMIN, ROLE_ADMIN_KANTOR]), async (re
 
 app.post('/api/pemasukan', auth([ROLE_SUPER_ADMIN, ROLE_ADMIN_KANTOR]), async (req, res) => {
   try {
-    const { nama_pemasukan, jumlah, tanggal, keterangan } = req.body;
+    const { nama_pemasukan, jumlah, tanggal, keterangan, lokasi } = req.body;
     const conn = await getPool();
     const [result] = await conn.execute(
-      'INSERT INTO tabel_pemasukan (nama_pemasukan, jumlah, tanggal, keterangan) VALUES (?, ?, ?, ?)',
-      [nama_pemasukan, jumlah, tanggal, keterangan || '']
+      'INSERT INTO tabel_pemasukan (nama_pemasukan, jumlah, tanggal, keterangan, lokasi) VALUES (?, ?, ?, ?, ?)',
+      [nama_pemasukan, jumlah, tanggal, keterangan || '', lokasi || '']
     );
     res.status(201).json({ id: result.insertId });
   } catch (err) {
@@ -461,11 +461,11 @@ app.post('/api/pemasukan', auth([ROLE_SUPER_ADMIN, ROLE_ADMIN_KANTOR]), async (r
 
 app.put('/api/pemasukan/:id', auth([ROLE_SUPER_ADMIN, ROLE_ADMIN_KANTOR]), async (req, res) => {
   try {
-    const { nama_pemasukan, jumlah, tanggal, keterangan } = req.body;
+    const { nama_pemasukan, jumlah, tanggal, keterangan, lokasi } = req.body;
     const conn = await getPool();
     await conn.execute(
-      'UPDATE tabel_pemasukan SET nama_pemasukan = ?, jumlah = ?, tanggal = ?, keterangan = ? WHERE id = ?',
-      [nama_pemasukan, jumlah, tanggal, keterangan || '', req.params.id]
+      'UPDATE tabel_pemasukan SET nama_pemasukan = ?, jumlah = ?, tanggal = ?, keterangan = ?, lokasi = ? WHERE id = ?',
+      [nama_pemasukan, jumlah, tanggal, keterangan || '', lokasi || '', req.params.id]
     );
     res.json({ success: true });
   } catch (err) {
@@ -512,11 +512,11 @@ app.get('/api/pengeluaran', auth([ROLE_SUPER_ADMIN, ROLE_ADMIN_KANTOR]), async (
 
 app.post('/api/pengeluaran', auth([ROLE_SUPER_ADMIN, ROLE_ADMIN_KANTOR]), async (req, res) => {
   try {
-    const { nama_pengeluaran, jumlah, tanggal, keterangan } = req.body;
+    const { nama_pengeluaran, jumlah, tanggal, keterangan, lokasi } = req.body;
     const conn = await getPool();
     const [result] = await conn.execute(
-      'INSERT INTO tabel_pengeluaran_kantor (nama_pengeluaran, jumlah, tanggal, keterangan) VALUES (?, ?, ?, ?)',
-      [nama_pengeluaran, jumlah, tanggal, keterangan || '']
+      'INSERT INTO tabel_pengeluaran_kantor (nama_pengeluaran, jumlah, tanggal, keterangan, lokasi) VALUES (?, ?, ?, ?, ?)',
+      [nama_pengeluaran, jumlah, tanggal, keterangan || '', lokasi || '']
     );
     res.status(201).json({ id: result.insertId });
   } catch (err) {
@@ -527,11 +527,11 @@ app.post('/api/pengeluaran', auth([ROLE_SUPER_ADMIN, ROLE_ADMIN_KANTOR]), async 
 
 app.put('/api/pengeluaran/:id', auth([ROLE_SUPER_ADMIN, ROLE_ADMIN_KANTOR]), async (req, res) => {
   try {
-    const { nama_pengeluaran, jumlah, tanggal, keterangan } = req.body;
+    const { nama_pengeluaran, jumlah, tanggal, keterangan, lokasi } = req.body;
     const conn = await getPool();
     await conn.execute(
-      'UPDATE tabel_pengeluaran_kantor SET nama_pengeluaran = ?, jumlah = ?, tanggal = ?, keterangan = ? WHERE id = ?',
-      [nama_pengeluaran, jumlah, tanggal, keterangan || '', req.params.id]
+      'UPDATE tabel_pengeluaran_kantor SET nama_pengeluaran = ?, jumlah = ?, tanggal = ?, keterangan = ?, lokasi = ? WHERE id = ?',
+      [nama_pengeluaran, jumlah, tanggal, keterangan || '', lokasi || '', req.params.id]
     );
     res.json({ success: true });
   } catch (err) {
@@ -578,11 +578,11 @@ app.get('/api/gaji', auth([ROLE_SUPER_ADMIN, ROLE_ADMIN_KANTOR]), async (req, re
 
 app.post('/api/gaji', auth([ROLE_SUPER_ADMIN, ROLE_ADMIN_KANTOR]), async (req, res) => {
   try {
-    const { nama_tukang, jumlah, tanggal, keterangan } = req.body;
+    const { nama_tukang, jumlah, tanggal, keterangan, lokasi } = req.body;
     const conn = await getPool();
     const [result] = await conn.execute(
-      'INSERT INTO tabel_gaji_tukang (nama_tukang, jumlah, tanggal, keterangan) VALUES (?, ?, ?, ?)',
-      [nama_tukang, jumlah, tanggal, keterangan || '']
+      'INSERT INTO tabel_gaji_tukang (nama_tukang, jumlah, tanggal, keterangan, lokasi) VALUES (?, ?, ?, ?, ?)',
+      [nama_tukang, jumlah, tanggal, keterangan || '', lokasi || '']
     );
     res.status(201).json({ id: result.insertId });
   } catch (err) {
@@ -593,11 +593,11 @@ app.post('/api/gaji', auth([ROLE_SUPER_ADMIN, ROLE_ADMIN_KANTOR]), async (req, r
 
 app.put('/api/gaji/:id', auth([ROLE_SUPER_ADMIN, ROLE_ADMIN_KANTOR]), async (req, res) => {
   try {
-    const { nama_tukang, jumlah, tanggal, keterangan } = req.body;
+    const { nama_tukang, jumlah, tanggal, keterangan, lokasi } = req.body;
     const conn = await getPool();
     await conn.execute(
-      'UPDATE tabel_gaji_tukang SET nama_tukang = ?, jumlah = ?, tanggal = ?, keterangan = ? WHERE id = ?',
-      [nama_tukang, jumlah, tanggal, keterangan || '', req.params.id]
+      'UPDATE tabel_gaji_tukang SET nama_tukang = ?, jumlah = ?, tanggal = ?, keterangan = ?, lokasi = ? WHERE id = ?',
+      [nama_tukang, jumlah, tanggal, keterangan || '', lokasi || '', req.params.id]
     );
     res.json({ success: true });
   } catch (err) {
@@ -692,7 +692,7 @@ app.get('/api/stok', auth([ROLE_SUPER_ADMIN, ROLE_ADMIN_GUDANG]), async (req, re
     const hasPagination = req.query.page != null && req.query.limit != null;
     const materialWhere = search ? ' WHERE m.nama_material LIKE ?' : '';
     const searchParams = search ? [`%${search}%`] : [];
-    const subquery = `SELECT m.id AS material_id, m.nama_material, m.satuan,
+    const subquery = `SELECT m.id AS material_id, m.nama_material, m.satuan, m.harga,
          COALESCE(mm.total, 0) AS total_masuk, COALESCE(mk.total, 0) AS total_keluar,
          (COALESCE(mm.total, 0) - COALESCE(mk.total, 0)) AS stok
        FROM tabel_material m
