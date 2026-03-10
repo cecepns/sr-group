@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { Plus, Pencil, Trash2 } from 'lucide-react';
+import { useEffect, useState, useRef } from 'react';
+import { Plus, Pencil, Trash2, Search } from 'lucide-react';
 import { getMaterials, postMaterial, putMaterial, deleteMaterial } from '../services/api';
 import Modal from '../components/Modal';
 import ConfirmModal from '../components/ConfirmModal';
@@ -20,12 +20,16 @@ export default function InputMaterial() {
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
+  const [searchTerm, setSearchTerm] = useState('');
   const limit = PAGINATION_LIMIT;
+  const searchTimeout = useRef(null);
 
-  const load = async (p = page) => {
+  const load = async (p = page, search = searchTerm) => {
     try {
       setLoading(true);
-      const res = await getMaterials({ page: p, limit });
+      const params = { page: p, limit };
+      if (search) params.search = search;
+      const res = await getMaterials(params);
       const body = res.data;
       if (body.data !== undefined) {
         setList(body.data);
@@ -49,6 +53,14 @@ export default function InputMaterial() {
   useEffect(() => {
     load(1);
   }, []);
+
+  const handleSearch = (value) => {
+    setSearchTerm(value);
+    if (searchTimeout.current) clearTimeout(searchTimeout.current);
+    searchTimeout.current = setTimeout(() => {
+      load(1, value);
+    }, 400);
+  };
 
   const openAdd = () => {
     setEditingId(null);
@@ -117,8 +129,18 @@ export default function InputMaterial() {
       </div>
 
       <div className="bg-white rounded-2xl shadow border border-slate-200 overflow-hidden">
-        <div className="px-6 py-4 border-b border-slate-200 bg-slate-50">
+        <div className="px-6 py-4 border-b border-slate-200 bg-slate-50 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <h2 className="text-lg font-semibold text-slate-800">Daftar Material</h2>
+          <div className="relative w-full sm:w-72">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => handleSearch(e.target.value)}
+              placeholder="Cari material..."
+              className="w-full pl-9 pr-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-slate-500 focus:border-slate-500"
+            />
+          </div>
         </div>
         {loading ? (
           <p className="p-6 text-slate-500">Memuat...</p>
@@ -130,7 +152,7 @@ export default function InputMaterial() {
                   <th className="px-6 py-4 font-medium">No</th>
                   <th className="px-6 py-4 font-medium">Nama Barang</th>
                   <th className="px-6 py-4 font-medium">Satuan</th>
-                  <th className="px-6 py-4 font-medium">Harga</th>
+                  <th className="px-6 py-4 font-medium">Harga Satuan</th>
                   <th className="px-6 py-4 font-medium">Supplier</th>
                   <th className="px-6 py-4 font-medium w-28">Aksi</th>
                 </tr>
@@ -138,11 +160,13 @@ export default function InputMaterial() {
               <tbody className="divide-y divide-slate-200">
                 {list.map((row, i) => (
                   <tr key={row.id} className="hover:bg-slate-50">
-                    <td className="px-6 py-4">{i + 1}</td>
+                    <td className="px-6 py-4">{(page - 1) * limit + i + 1}</td>
                     <td className="px-6 py-4">{row.nama_material}</td>
                     <td className="px-6 py-4">{row.satuan}</td>
                     <td className="px-6 py-4">
-                      {row.harga != null ? Number(row.harga).toLocaleString('id-ID') : '-'}
+                      {row.harga != null && Number(row.harga) > 0
+                        ? `Rp ${Number(row.harga).toLocaleString('id-ID')} / ${row.satuan}`
+                        : '-'}
                     </td>
                     <td className="px-6 py-4">{row.supplier || '-'}</td>
                     <td className="px-6 py-4">
@@ -178,7 +202,7 @@ export default function InputMaterial() {
             limit={limit}
             total={total}
             totalPages={totalPages}
-            onPageChange={(p) => { setPage(p); setLoading(true); load(p); }}
+            onPageChange={(p) => { setPage(p); load(p, searchTerm); }}
           />
         )}
       </div>

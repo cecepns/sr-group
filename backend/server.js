@@ -184,13 +184,16 @@ app.delete('/api/users/:id', auth([ROLE_SUPER_ADMIN]), async (req, res) => {
 app.get('/api/materials', auth([ROLE_SUPER_ADMIN]), async (req, res) => {
   try {
     const conn = await getPool();
+    const search = (req.query.search || '').trim();
     const hasPagination = req.query.page != null && req.query.limit != null;
+    const whereClause = search ? ' WHERE nama_material LIKE ? OR satuan LIKE ? OR supplier LIKE ?' : '';
+    const searchParams = search ? [`%${search}%`, `%${search}%`, `%${search}%`] : [];
     if (hasPagination) {
       const { page, limit, offset } = parsePagination(req);
-      const [[{ total }]] = await conn.execute('SELECT COUNT(*) AS total FROM tabel_material');
+      const [[{ total }]] = await conn.execute('SELECT COUNT(*) AS total FROM tabel_material' + whereClause, searchParams);
       const [rows] = await conn.execute(
-        'SELECT * FROM tabel_material ORDER BY created_at DESC LIMIT ? OFFSET ?',
-        [limit, offset]
+        'SELECT * FROM tabel_material' + whereClause + ' ORDER BY created_at DESC LIMIT ? OFFSET ?',
+        [...searchParams, limit, offset]
       );
       res.json({
         data: rows,
@@ -200,7 +203,7 @@ app.get('/api/materials', auth([ROLE_SUPER_ADMIN]), async (req, res) => {
         totalPages: Math.ceil(Number(total) / limit),
       });
     } else {
-      const [rows] = await conn.execute('SELECT * FROM tabel_material ORDER BY created_at DESC');
+      const [rows] = await conn.execute('SELECT * FROM tabel_material' + whereClause + ' ORDER BY created_at DESC', searchParams);
       res.json(rows);
     }
   } catch (err) {
@@ -697,7 +700,6 @@ app.get('/api/stok', auth([ROLE_SUPER_ADMIN, ROLE_ADMIN_GUDANG]), async (req, re
        LEFT JOIN (
          SELECT material_id, SUM(qty) AS total
          FROM tabel_material_keluar
-         WHERE lokasi_tujuan_id IS NULL
          GROUP BY material_id
        ) mk ON m.id = mk.material_id` + materialWhere + `
        ORDER BY m.nama_material`;
