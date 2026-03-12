@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { Plus, Pencil, Trash2, Search } from 'lucide-react';
-import { getPemasukan, postPemasukan, putPemasukan, deletePemasukan } from '../services/api';
+import { getPemasukan, postPemasukan, putPemasukan, deletePemasukan, getLocations } from '../services/api';
 import { formatDate } from '../utils/format';
 import Modal from '../components/Modal';
 import Pagination, { PAGINATION_LIMIT } from '../components/Pagination';
@@ -12,6 +12,7 @@ const btnEdit = 'inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-blue
 
 export default function Pemasukan() {
   const [list, setList] = useState([]);
+  const [locations, setLocations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
@@ -56,6 +57,14 @@ export default function Pemasukan() {
   };
 
   useEffect(() => {
+    (async () => {
+      try {
+        const resLoc = await getLocations();
+        setLocations(Array.isArray(resLoc.data) ? resLoc.data : resLoc.data?.data ?? []);
+      } catch (e) {
+        console.error(e);
+      }
+    })();
     load(1);
   }, []);
 
@@ -231,13 +240,16 @@ export default function Pemasukan() {
           </div>
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1.5">Lokasi</label>
-            <input
-              type="text"
+            <select
               value={form.lokasi}
               onChange={(e) => setForm((f) => ({ ...f, lokasi: e.target.value }))}
               className={inputClass}
-              placeholder="Contoh: Proyek A"
-            />
+            >
+              <option value="">Pilih Lokasi (opsional)</option>
+              {locations.map((l) => (
+                <option key={l.id} value={l.nama_lokasi}>{l.nama_lokasi}</option>
+              ))}
+            </select>
           </div>
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1.5">Tanggal</label>
