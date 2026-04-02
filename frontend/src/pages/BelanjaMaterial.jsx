@@ -4,6 +4,7 @@ import { getBelanjaMaterial, postBelanjaMaterial, putBelanjaMaterial, deleteBela
 import { formatDate } from '../utils/format';
 import Modal from '../components/Modal';
 import Pagination, { PAGINATION_LIMIT } from '../components/Pagination';
+import SearchableSelect, { toMaterialOptions } from '../components/SearchableSelect';
 
 const inputClass = 'w-full border border-slate-300 rounded-xl px-3 py-2.5 focus:ring-2 focus:ring-slate-500 focus:border-slate-500';
 const btnPrimary = 'inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-700 text-white hover:bg-slate-800 disabled:opacity-50 transition-colors';
@@ -22,7 +23,7 @@ export default function BelanjaMaterial() {
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [searchTerm, setSearchTerm] = useState('');
-  const limit = PAGINATION_LIMIT;
+  const [pageSize, setPageSize] = useState(PAGINATION_LIMIT);
   const searchTimeout = useRef(null);
   const [form, setForm] = useState({
     material_id: '',
@@ -33,10 +34,10 @@ export default function BelanjaMaterial() {
     keterangan: '',
   });
 
-  const loadList = async (p = page, search = searchTerm) => {
+  const loadList = async (p = page, search = searchTerm, lim = pageSize) => {
     try {
       setLoading(true);
-      const params = { page: p, limit };
+      const params = { page: p, limit: lim };
       if (search) params.search = search;
       const res = await getBelanjaMaterial(params);
       const body = res.data;
@@ -190,7 +191,7 @@ export default function BelanjaMaterial() {
               <tbody className="divide-y divide-slate-200">
                 {list.map((row, i) => (
                   <tr key={row.id} className="hover:bg-slate-50">
-                    <td className="px-6 py-4">{(page - 1) * limit + i + 1}</td>
+                    <td className="px-6 py-4">{(page - 1) * pageSize + i + 1}</td>
                     <td className="px-6 py-4">{row.nama_material} ({row.satuan})</td>
                     <td className="px-6 py-4">{Number(row.qty).toLocaleString('id-ID')}</td>
                     <td className="px-6 py-4">{formatRupiah(row.harga)}</td>
@@ -217,10 +218,14 @@ export default function BelanjaMaterial() {
         {!loading && total > 0 && (
           <Pagination
             page={page}
-            limit={limit}
+            limit={pageSize}
             total={total}
             totalPages={totalPages}
             onPageChange={(p) => loadList(p)}
+            onLimitChange={(n) => {
+              setPageSize(n);
+              loadList(1, searchTerm, n);
+            }}
           />
         )}
       </div>
@@ -230,17 +235,15 @@ export default function BelanjaMaterial() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1.5">Material</label>
-              <select
+              <SearchableSelect
+                inputId="belanja-material"
+                aria-label="Pilih material"
+                options={toMaterialOptions(materials)}
                 value={form.material_id}
-                onChange={(e) => setForm((f) => ({ ...f, material_id: e.target.value }))}
-                className={inputClass}
-                required
-              >
-                <option value="">Pilih Material</option>
-                {materials.map((m) => (
-                  <option key={m.id} value={m.id}>{m.nama_material} ({m.satuan})</option>
-                ))}
-              </select>
+                onChange={(v) => setForm((f) => ({ ...f, material_id: v }))}
+                placeholder="Ketik atau pilih material..."
+                isClearable
+              />
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1.5">Qty</label>

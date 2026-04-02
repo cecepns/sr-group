@@ -20,12 +20,12 @@ export default function InputLokasi() {
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
-  const limit = PAGINATION_LIMIT;
+  const [pageSize, setPageSize] = useState(PAGINATION_LIMIT);
 
-  const load = async (p = page) => {
+  const load = async (p = page, lim = pageSize) => {
     try {
       setLoading(true);
-      const res = await getLocations({ page: p, limit });
+      const res = await getLocations({ page: p, limit: lim });
       const body = res.data;
       if (body.data !== undefined) {
         setList(body.data);
@@ -125,7 +125,7 @@ export default function InputLokasi() {
               <tbody className="divide-y divide-slate-200">
                 {list.map((row, i) => (
                   <tr key={row.id} className="hover:bg-slate-50">
-                    <td className="px-6 py-4">{i + 1}</td>
+                    <td className="px-6 py-4">{(page - 1) * pageSize + i + 1}</td>
                     <td className="px-6 py-4">{row.nama_lokasi}</td>
                     <td className="px-6 py-4">{row.keterangan || '-'}</td>
                     <td className="px-6 py-4">
@@ -158,10 +158,14 @@ export default function InputLokasi() {
         {!loading && total > 0 && (
           <Pagination
             page={page}
-            limit={limit}
+            limit={pageSize}
             total={total}
             totalPages={totalPages}
             onPageChange={(p) => { setPage(p); load(p); }}
+            onLimitChange={(n) => {
+              setPageSize(n);
+              load(1, n);
+            }}
           />
         )}
       </div>

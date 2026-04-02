@@ -21,13 +21,13 @@ export default function StokGudang() {
   const [confirmDelete, setConfirmDelete] = useState({ open: false, id: null, name: '' });
   const [editingRow, setEditingRow] = useState(null);
   const [form, setForm] = useState({ nama_material: '', satuan: '' });
-  const limit = PAGINATION_LIMIT;
+  const [pageSize, setPageSize] = useState(PAGINATION_LIMIT);
   const searchTimeout = useRef(null);
 
-  const load = async (p = page, search = searchTerm) => {
+  const load = async (p = page, search = searchTerm, lim = pageSize) => {
     try {
       setLoading(true);
-      const params = { page: p, limit };
+      const params = { page: p, limit: lim };
       if (search) params.search = search;
       const res = await getStok(params);
       const body = res.data;
@@ -138,7 +138,7 @@ export default function StokGudang() {
               <tbody className="divide-y divide-slate-200">
                 {list.map((row, i) => (
                   <tr key={row.material_id} className="hover:bg-slate-50">
-                    <td className="px-6 py-4">{(page - 1) * limit + i + 1}</td>
+                    <td className="px-6 py-4">{(page - 1) * pageSize + i + 1}</td>
                     <td className="px-6 py-4">{row.nama_material}</td>
                     <td className="px-6 py-4">{row.satuan}</td>
                     <td className="px-6 py-4">
@@ -179,10 +179,14 @@ export default function StokGudang() {
         {!loading && total > 0 && (
           <Pagination
             page={page}
-            limit={limit}
+            limit={pageSize}
             total={total}
             totalPages={totalPages}
             onPageChange={(p) => load(p)}
+            onLimitChange={(n) => {
+              setPageSize(n);
+              load(1, searchTerm, n);
+            }}
           />
         )}
       </div>

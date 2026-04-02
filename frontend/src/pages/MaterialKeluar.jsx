@@ -5,6 +5,7 @@ import { formatDate } from '../utils/format';
 import Modal from '../components/Modal';
 import ConfirmModal from '../components/ConfirmModal';
 import Pagination, { PAGINATION_LIMIT } from '../components/Pagination';
+import SearchableSelect, { toMaterialOptions, toLokasiIdOptions } from '../components/SearchableSelect';
 
 const inputClass = 'w-full border border-slate-300 rounded-xl px-3 py-2.5 focus:ring-2 focus:ring-slate-500 focus:border-slate-500';
 const btnPrimary = 'inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-700 text-white hover:bg-slate-800 disabled:opacity-50 transition-colors';
@@ -21,7 +22,7 @@ export default function MaterialKeluar() {
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
-  const limit = PAGINATION_LIMIT;
+  const [pageSize, setPageSize] = useState(PAGINATION_LIMIT);
   const [form, setForm] = useState({
     material_id: '',
     lokasi_id: '',
@@ -31,10 +32,10 @@ export default function MaterialKeluar() {
     keterangan: '',
   });
 
-  const loadList = async (p = page) => {
+  const loadList = async (p = page, lim = pageSize) => {
     try {
       setLoading(true);
-      const res = await getMaterialKeluar({ page: p, limit });
+      const res = await getMaterialKeluar({ page: p, limit: lim });
       const body = res.data;
       if (body.data !== undefined) {
         setList(body.data);
@@ -151,7 +152,7 @@ export default function MaterialKeluar() {
               <tbody className="divide-y divide-slate-200">
                 {list.map((row, i) => (
                   <tr key={row.id} className="hover:bg-slate-50">
-                    <td className="px-6 py-4">{i + 1}</td>
+                    <td className="px-6 py-4">{(page - 1) * pageSize + i + 1}</td>
                     <td className="px-6 py-4">{row.nama_material} ({row.satuan})</td>
                     <td className="px-6 py-4">
                       {row.harga != null && Number(row.harga) > 0
@@ -183,10 +184,14 @@ export default function MaterialKeluar() {
         {!loading && total > 0 && (
           <Pagination
             page={page}
-            limit={limit}
+            limit={pageSize}
             total={total}
             totalPages={totalPages}
             onPageChange={(p) => loadList(p)}
+            onLimitChange={(n) => {
+              setPageSize(n);
+              loadList(1, n);
+            }}
           />
         )}
       </div>
@@ -196,44 +201,39 @@ export default function MaterialKeluar() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1.5">Material</label>
-              <select
+              <SearchableSelect
+                inputId="mk-material"
+                aria-label="Pilih material"
+                options={toMaterialOptions(materials)}
                 value={form.material_id}
-                onChange={(e) => setForm((f) => ({ ...f, material_id: e.target.value }))}
-                className={inputClass}
-                required
-              >
-                <option value="">Pilih Material</option>
-                {materials.map((m) => (
-                  <option key={m.id} value={m.id}>{m.nama_material} ({m.satuan})</option>
-                ))}
-              </select>
+                onChange={(v) => setForm((f) => ({ ...f, material_id: v }))}
+                placeholder="Ketik atau pilih material..."
+                isClearable
+              />
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1.5">Lokasi Asal</label>
-              <select
+              <SearchableSelect
+                inputId="mk-lokasi-asal"
+                aria-label="Pilih lokasi asal"
+                options={toLokasiIdOptions(locations)}
                 value={form.lokasi_id}
-                onChange={(e) => setForm((f) => ({ ...f, lokasi_id: e.target.value }))}
-                className={inputClass}
-                required
-              >
-                <option value="">Pilih Lokasi</option>
-                {locations.map((l) => (
-                  <option key={l.id} value={l.id}>{l.nama_lokasi}</option>
-                ))}
-              </select>
+                onChange={(v) => setForm((f) => ({ ...f, lokasi_id: v }))}
+                placeholder="Ketik atau pilih lokasi..."
+                isClearable
+              />
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1.5">Lokasi Tujuan (opsional)</label>
-              <select
+              <SearchableSelect
+                inputId="mk-lokasi-tujuan"
+                aria-label="Pilih lokasi tujuan"
+                options={toLokasiIdOptions(locations)}
                 value={form.lokasi_tujuan_id}
-                onChange={(e) => setForm((f) => ({ ...f, lokasi_tujuan_id: e.target.value }))}
-                className={inputClass}
-              >
-                <option value="">Pilih Lokasi Tujuan</option>
-                {locations.map((l) => (
-                  <option key={l.id} value={l.id}>{l.nama_lokasi}</option>
-                ))}
-              </select>
+                onChange={(v) => setForm((f) => ({ ...f, lokasi_tujuan_id: v }))}
+                placeholder="Ketik atau pilih lokasi tujuan..."
+                isClearable
+              />
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1.5">Qty</label>

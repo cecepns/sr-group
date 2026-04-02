@@ -21,13 +21,13 @@ export default function InputMaterial() {
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [searchTerm, setSearchTerm] = useState('');
-  const limit = PAGINATION_LIMIT;
+  const [pageSize, setPageSize] = useState(PAGINATION_LIMIT);
   const searchTimeout = useRef(null);
 
-  const load = async (p = page, search = searchTerm) => {
+  const load = async (p = page, search = searchTerm, lim = pageSize) => {
     try {
       setLoading(true);
-      const params = { page: p, limit };
+      const params = { page: p, limit: lim };
       if (search) params.search = search;
       const res = await getMaterials(params);
       const body = res.data;
@@ -160,7 +160,7 @@ export default function InputMaterial() {
               <tbody className="divide-y divide-slate-200">
                 {list.map((row, i) => (
                   <tr key={row.id} className="hover:bg-slate-50">
-                    <td className="px-6 py-4">{(page - 1) * limit + i + 1}</td>
+                    <td className="px-6 py-4">{(page - 1) * pageSize + i + 1}</td>
                     <td className="px-6 py-4">{row.nama_material}</td>
                     <td className="px-6 py-4">{row.satuan}</td>
                     <td className="px-6 py-4">
@@ -199,10 +199,14 @@ export default function InputMaterial() {
         {!loading && total > 0 && (
           <Pagination
             page={page}
-            limit={limit}
+            limit={pageSize}
             total={total}
             totalPages={totalPages}
             onPageChange={(p) => { setPage(p); load(p, searchTerm); }}
+            onLimitChange={(n) => {
+              setPageSize(n);
+              load(1, searchTerm, n);
+            }}
           />
         )}
       </div>

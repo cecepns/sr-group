@@ -4,6 +4,7 @@ import { getPemasukan, postPemasukan, putPemasukan, deletePemasukan, getLocation
 import { formatDate } from '../utils/format';
 import Modal from '../components/Modal';
 import Pagination, { PAGINATION_LIMIT } from '../components/Pagination';
+import SearchableSelect, { toLokasiNamaOptions } from '../components/SearchableSelect';
 
 const inputClass = 'w-full border border-slate-300 rounded-xl px-3 py-2.5 focus:ring-2 focus:ring-slate-500 focus:border-slate-500';
 const btnPrimary = 'inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-700 text-white hover:bg-slate-800 disabled:opacity-50 transition-colors';
@@ -22,7 +23,7 @@ export default function Pemasukan() {
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [searchTerm, setSearchTerm] = useState('');
-  const limit = PAGINATION_LIMIT;
+  const [pageSize, setPageSize] = useState(PAGINATION_LIMIT);
   const searchTimeout = useRef(null);
   const [form, setForm] = useState({
     nama_pemasukan: '',
@@ -32,10 +33,10 @@ export default function Pemasukan() {
     lokasi: '',
   });
 
-  const load = async (p = page, search = searchTerm) => {
+  const load = async (p = page, search = searchTerm, lim = pageSize) => {
     try {
       setLoading(true);
-      const params = { page: p, limit };
+      const params = { page: p, limit: lim };
       if (search) params.search = search;
       const res = await getPemasukan(params);
       const body = res.data;
@@ -180,7 +181,7 @@ export default function Pemasukan() {
               <tbody className="divide-y divide-slate-200">
                 {list.map((row, i) => (
                   <tr key={row.id} className="hover:bg-slate-50">
-                    <td className="px-6 py-4">{(page - 1) * limit + i + 1}</td>
+                    <td className="px-6 py-4">{(page - 1) * pageSize + i + 1}</td>
                     <td className="px-6 py-4">{row.nama_pemasukan}</td>
                     <td className="px-6 py-4">{formatRupiah(row.jumlah)}</td>
                     <td className="px-6 py-4">{row.lokasi || '-'}</td>
@@ -206,10 +207,14 @@ export default function Pemasukan() {
         {!loading && total > 0 && (
           <Pagination
             page={page}
-            limit={limit}
+            limit={pageSize}
             total={total}
             totalPages={totalPages}
             onPageChange={(p) => load(p)}
+            onLimitChange={(n) => {
+              setPageSize(n);
+              load(1, searchTerm, n);
+            }}
           />
         )}
       </div>
@@ -240,16 +245,15 @@ export default function Pemasukan() {
           </div>
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1.5">Lokasi</label>
-            <select
+            <SearchableSelect
+              inputId="pemasukan-lokasi"
+              aria-label="Pilih lokasi"
+              options={toLokasiNamaOptions(locations)}
               value={form.lokasi}
-              onChange={(e) => setForm((f) => ({ ...f, lokasi: e.target.value }))}
-              className={inputClass}
-            >
-              <option value="">Pilih Lokasi (opsional)</option>
-              {locations.map((l) => (
-                <option key={l.id} value={l.nama_lokasi}>{l.nama_lokasi}</option>
-              ))}
-            </select>
+              onChange={(v) => setForm((f) => ({ ...f, lokasi: v }))}
+              placeholder="Ketik atau pilih lokasi (opsional)..."
+              isClearable
+            />
           </div>
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1.5">Tanggal</label>
