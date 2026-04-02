@@ -253,7 +253,7 @@ app.delete('/api/materials/:id', auth([ROLE_SUPER_ADMIN]), async (req, res) => {
   }
 });
 
-app.get('/api/locations', auth([ROLE_SUPER_ADMIN]), async (req, res) => {
+app.get('/api/locations', auth([ROLE_SUPER_ADMIN, ROLE_ADMIN_GUDANG, ROLE_ADMIN_KANTOR]), async (req, res) => {
   try {
     const conn = await getPool();
     const hasPagination = req.query.page != null && req.query.limit != null;
